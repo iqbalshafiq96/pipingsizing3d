@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piping Hydraulics &amp; Thermal Builder (3D)</title>
+<style>
+:root{
+  --bg:#f6f8fb;--panel:#ffffff;--ink:#1d2433;--muted:#5d6779;--line:#d9dee8;--accent:#0f6cbd;
+  --accent2:#e8f1fb;--ok:#107c41;--okbg:#e6f4ea;--bad:#c42b1c;--badbg:#fdecea;--warn:#8a5a00;--warnbg:#fff4ce;
+  --pipe:#4a5568;--grid:#e3e8f0;--ground:#f2f5f9;
+}
+body.dark{
+  --bg:#0f1419;--panel:#171d25;--ink:#e6e9ef;--muted:#9aa4b5;--line:#2b3442;--accent:#4ea1ff;--accent2:#1b2a3d;
+  --ok:#5fd38d;--okbg:#14301f;--bad:#ff7b6e;--badbg:#3a1714;--warn:#ffd36b;--warnbg:#3a2e0d;--pipe:#a9b4c6;--grid:#243040;--ground:#131a22;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;font-size:13px;color:var(--ink);background:var(--bg)}
+button,select,input{font:inherit;color:inherit}
+.app{display:flex;flex-direction:column;gap:10px;padding:10px}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.top h1{font-size:15px;margin:0 auto 0 0}
+.chip{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--accent2);color:var(--accent)}
+.chip.off{background:var(--warnbg);color:var(--warn)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 10px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.port:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.on{background:var(--accent2);border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.main{display:grid;grid-template-columns:340px minmax(0,1fr);gap:10px}
+@media (max-width:900px){.main{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.card h2{font-size:13px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.card h2 .n{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+details>summary{cursor:pointer;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.row.one{grid-template-columns:1fr}
+.row.three{grid-template-columns:1fr 1fr 1fr}
+label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);min-width:0}
+input,select{border:1px solid var(--line);background:var(--bg);border-radius:5px;padding:5px 6px;width:100%;min-width:0}
+input[type=checkbox],input[type=radio]{width:auto}
+.inline{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:12px}
+.hint{font-size:11px;color:var(--muted);margin:2px 0 6px}
+.alert{border-radius:6px;padding:6px 8px;font-size:12px;margin:4px 0}
+.alert.bad{background:var(--badbg);color:var(--bad)}
+.alert.ok{background:var(--okbg);color:var(--ok)}
+.alert.warn{background:var(--warnbg);color:var(--warn)}
+.alert ul{margin:2px 0 0 16px;padding:0}
+.canvaswrap{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+#svg{display:block;width:100%;height:580px;touch-action:none;cursor:grab;user-select:none;background:radial-gradient(ellipse at 50% 30%,var(--panel),var(--ground))}
+.tools{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:72%}
+.tools .grp{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
+.tools .btn{padding:3px 8px;font-size:12px}
+.tools select{width:auto;padding:3px 6px;font-size:12px}
+.legend{position:absolute;left:8px;bottom:8px;font-size:11px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--muted);max-width:60%}
+.selinfo{position:absolute;left:8px;top:8px;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;max-width:30%}
+@media (max-width:700px){.selinfo{display:none}.tools{max-width:96%}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:8px;flex-wrap:wrap}
+.tab{border:none;background:none;padding:6px 10px;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:8px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.kpi b{display:block;font-size:15px}
+.kpi span{font-size:11px;color:var(--muted)}
+.kpi.bad{border-color:var(--bad)}
+.tablewrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;font-size:12px;width:max-content;min-width:100%}
+th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{position:sticky;top:0;background:var(--accent2);text-align:center;z-index:1}
+td:nth-child(-n+4){text-align:left}
+.chartbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+#chart{width:100%;height:340px;display:block}
+.eq{font-family:Consolas,"Courier New",monospace;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;line-height:1.6;overflow-x:auto;white-space:pre}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hidden{display:none!important}
+svg text{font-family:"Segoe UI",Arial,sans-serif}
+.seg{cursor:pointer}
+.port{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app" id="ph-root">
+  <div class="top">
+    <h1>Piping Hydraulics &amp; Temperature Drop Builder · 3D</h1>
+    <span class="chip off" id="conn">Standalone (no Python)</span>
+    <button class="btn" type="button" id="bUndo" title="Undo last change">Undo</button>
+    <button class="btn" type="button" id="bExport">Export JSON</button>
+    <label class="btn" style="flex-direction:row;color:var(--ink);font-size:13px">Import JSON<input type="file" id="fImport" accept=".json" class="hidden"></label>
+    <button class="btn danger" type="button" id="bClear">Clear network</button>
+    <button class="btn primary" type="button" id="bCalc">Calculate</button>
+  </div>
+
+  <div class="main">
+    <!-- ================= LEFT PANEL ================= -->
+    <div class="side">
+      <details class="card" open>
+        <summary><h2><span class="n">1</span>Inlet &amp; medium</h2></summary>
+        <div class="row one"><label>Inlet label (rename as you like)<input id="in_label"></label></div>
+        <div class="row one"><label>Medium<select id="in_fluid"></select></label></div>
+        <div id="customL" class="hidden">
+          <div class="row"><label>Density kg/m³<input id="cl_rho" type="number" value="1000"></label><label>Viscosity cP<input id="cl_mu" type="number" value="1"></label></div>
+          <div class="row"><label>cp J/kg·K<input id="cl_cp" type="number" value="4184"></label><label>k W/m·K<input id="cl_k" type="number" value="0.6"></label></div>
+        </div>
+        <div id="customG" class="hidden">
+          <div class="row three"><label>MW<input id="cg_mw" type="number" value="28.96"></label><label>Visc. cP<input id="cg_mu" type="number" value="0.018"></label><label>Z<input id="cg_z" type="number" value="1"></label></div>
+          <div class="row three"><label>cp J/kg·K<input id="cg_cp" type="number" value="1005"></label><label>k W/m·K<input id="cg_k" type="number" value="0.026"></label><label>γ (cp/cv)<input id="cg_g" type="number" value="1.4"></label></div>
+          <div class="row one"><label>Joule-Thomson coeff. K/bar<input id="cg_jt" type="number" value="0.25"></label></div>
+        </div>
+        <div class="row"><label>Temperature<input id="in_T" type="number"></label><label>Unit<select id="in_Tu"></select></label></div>
+        <div class="row"><label>Pressure<input id="in_P" type="number"></label><label>Unit<select id="in_Pu"></select></label></div>
+        <div class="row"><label>Flow<input id="in_Q" type="number"></label><label>Unit<select id="in_Qu"></select></label></div>
+        <div class="row"><label>Inlet line size<select id="in_nps"></select></label><label>Schedule<select id="in_sch"></select></label></div>
+        <div class="row hidden" id="in_custom"><label>Custom ID mm<input id="in_id" type="number" value="150"></label><label>Wall mm<input id="in_wall" type="number" value="6"></label></div>
+        <div class="row"><label>Initial flow direction<select id="in_head"></select></label>
+          <label>Inlet elevation Z (m)<input id="in_elev" type="number" value="0" step="0.1"></label></div>
+        <div class="row"><label>Atmos. pressure bar(a)<input id="in_patm" type="number" value="1.01325" step="0.001"></label><span></span></div>
+      </details>
+
+      <details class="card">
+        <summary><h2><span class="n">2</span>Pipe material &amp; insulation</h2></summary>
+        <div class="row"><label>Pipe material<select id="p_mat"></select></label><label>Roughness mm (blank = default)<input id="p_rough" type="number" step="0.001"></label></div>
+        <div class="row"><label>Length unit<select id="p_len"></select></label><span></span></div>
+        <label class="inline"><input type="checkbox" id="t_on" checked> Simulate temperature drop</label>
+        <div id="thermalBox">
+          <div class="row"><label>Insulation<select id="t_ins"></select></label><label>Thickness mm<input id="t_thk" type="number" value="50"></label></div>
+          <div class="row hidden" id="t_kbox"><label>Custom k W/m·K<input id="t_k" type="number" value="0.04"></label><span></span></div>
+          <div class="row"><label>Surroundings<select id="t_env"></select></label><label>Ambient temp. (inlet T unit)<input id="t_amb" type="number" value="30"></label></div>
+          <div class="row"><label>Jacket / surface<select id="t_jac"></select></label><label id="t_windL">Wind m/s<input id="t_wind" type="number" value="3"></label></div>
+          <div class="row hidden" id="t_soil"><label>Burial depth to centre m<input id="t_depth" type="number" value="1"></label><label>Soil k W/m·K<input id="t_ksoil" type="number" value="1.2"></label></div>
+        </div>
+      </details>
+
+      <div class="card" id="addCard">
+        <h2><span class="n">3</span><span id="formTitle">Add segment</span></h2>
+        <div class="hint" id="atPort">Select an open end (green +) on the canvas.</div>
+        <div class="row one"><label>Segment type<select id="s_type">
+          <option value="pipe">Pipe (straight, follows flow direction)</option>
+          <option value="elbow">Elbow 90° (turn E / W / N / S / Up / Down)</option>
+          <option value="tee">Tee (splits into run + branch)</option>
+          <option value="fitting">Valve / fitting / equipment</option>
+          <option value="reducer">Reducer / expander (size change)</option>
+          <option value="outlet">Outlet (end of branch)</option>
+        </select></label></div>
+        <div id="s_fields"></div>
+        <div id="s_alert"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn primary" type="button" id="bAdd">Add segment</button>
+          <button class="btn hidden" type="button" id="bCancelEdit">Cancel edit</button>
+        </div>
+      </div>
+
+      <div class="card" id="selCard">
+        <h2><span class="n">4</span>Selected segment</h2>
+        <div id="selBody" class="hint">Click a segment on the canvas to edit or delete it.</div>
+      </div>
+    </div>
+
+    <!-- ================= RIGHT: 3D CANVAS + RESULTS ================= -->
+    <div class="side">
+      <div class="canvaswrap">
+        <svg id="svg" role="img" aria-label="3D piping network canvas" tabindex="0"></svg>
+        <div class="selinfo" id="selInfo">Inlet</div>
+        <div class="tools">
+          <div class="grp">
+            <button class="btn" type="button" data-view="iso" title="Isometric view">Iso</button>
+            <button class="btn" type="button" data-view="plan" title="Top view (North up)">Plan</button>
+            <button class="btn" type="button" data-view="south" title="Elevation looking North">Front</button>
+            <button class="btn" type="button" data-view="east" title="Elevation looking West">Side</button>
+            <button class="btn" type="button" id="zFit">Fit</button>
+          </div>
+          <div class="grp">
+            <button class="btn" type="button" id="rotL" aria-label="Rotate left">⟲</button>
+            <button class="btn" type="button" id="rotR" aria-label="Rotate right">⟳</button>
+            <button class="btn" type="button" id="tiltU" aria-label="Tilt up">▲</button>
+            <button class="btn" type="button" id="tiltD" aria-label="Tilt down">▼</button>
+            <button class="btn" type="button" id="zIn" aria-label="Zoom in">＋</button>
+            <button class="btn" type="button" id="zOut" aria-label="Zoom out">－</button>
+            <button class="btn" type="button" id="dragMode" title="Touch: switch drag between rotate and pan">Drag: rotate</button>
+          </div>
+          <div class="grp">
+            <select id="scaleMode" aria-label="Length scale"><option value="schematic">Schematic lengths</option><option value="true">True scale</option></select>
+            <label class="btn inline"><input type="checkbox" id="showP" checked> P labels</label>
+            <label class="btn inline"><input type="checkbox" id="showShadow" checked> Ground</label>
+          </div>
+        </div>
+        <div class="legend">Drag = rotate · Shift / right-drag = pan · Wheel = zoom · Colour = pressure (blue high → red low)</div>
+      </div>
+
+      <div class="card" id="valCard" aria-live="polite"></div>
+
+      <div class="card" id="resCard">
+        <div class="tabs" role="tablist">
+          <button class="tab on" type="button" data-tab="sum">Summary</button>
+          <button class="tab" type="button" data-tab="prof">Axial profile</button>
+          <button class="tab" type="button" data-tab="tbl">Segment table</button>
+          <button class="tab" type="button" data-tab="eq">Equations</button>
+        </div>
+        <div id="tab_sum" aria-live="polite"><div class="hint">Build the network, then press <b>Calculate</b>.</div></div>
+        <div id="tab_prof" class="hidden">
+          <div class="chartbar">
+            <label class="inline"><input type="radio" name="cv" value="P" checked> Pressure</label>
+            <label class="inline"><input type="radio" name="cv" value="T"> Temperature</label>
+            <label class="inline"><input type="radio" name="cv" value="z"> Elevation</label>
+          </div>
+          <svg id="chart" role="img" aria-label="Axial profile chart"></svg>
+        </div>
+        <div id="tab_tbl" class="hidden"><div class="tablewrap" id="tbl"></div></div>
+        <div id="tab_eq" class="hidden">
+<div class="eq">Continuity       v  = ṁ / (ρ·A),   A = π·D²/4
+Reynolds         Re = ρ·v·D / μ    → Laminar &lt; 2300 &lt; Transitional &lt; 4000 &lt; Turbulent
+Friction factor  f  = 64/Re (laminar);  1/√f = −2·log10( ε/(3.7D) + 2.51/(Re·√f) )  (Colebrook-White)
+Darcy-Weisbach   ΔP_f = f·(L/D)·ρ·v²/2
+Minor loss       ΔP_k = K·ρ·v²/2,   K = n·f_T  (Crane TP-410),   f_T = 0.25 / [log10(ε/3.7D)]²
+Static head      ΔP_z = ρ·g·Δz     (Δz = ±L vertical, user Δz for sloped horizontal runs)
+Energy balance   P_out = P_in − ΔP_f − ΔP_k − ρ·g·Δz − ½ρ(v_out² − v_in²)
+Heat loss        T_out = T_amb + (T_in − T_amb)·exp(−L / (R'·ṁ·cp)),  R' = R_in + R_wall + R_ins + R_out
+Pressure effect  gas: ΔT = μ_JT·ΔP (Joule-Thomson)   liquid: ΔT = ΔP_loss / (ρ·cp) (friction heating)
+3D coordinates   E = +x, N = +y, Z = elevation [m]; fittings are zero-length points</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("ph-root");
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------------- Fallback catalogue (used only when opened without Streamlit) --------------- */
+  var FALLBACK = /*CATALOG*/{"fluids":{"Water":"liquid","Sea water (approx.)":"liquid","MEG 30% (approx.)":"liquid","Diesel":"liquid","Light crude oil":"liquid","Heavy fuel oil":"liquid","Air":"gas","Nitrogen":"gas","Natural gas (CH4-rich)":"gas","Carbon dioxide":"gas","Hydrogen":"gas","Steam (superheated)":"gas","Custom liquid":"liquid","Custom gas":"gas"},"pressure_units":["barg","bara","kPag","kPaa","MPag","MPaa","psig","psia","kg/cm2g"],"temp_units":["degC","degF","K"],"flow_units":["m3/h","L/s","L/min","USgpm","bbl/d","kg/h","kg/s","t/h","lb/h","Nm3/h","Sm3/h","MMSCFD"],"length_units":["m","km","ft"],"nps":["0.5","0.75","1","1.25","1.5","2","2.5","3","4","6","8","10","12","14","16","18","20","24"],"schedules":["10S","40","STD","80","XS"],"id_table":{"0.5":{"10S":17.08,"40":15.76,"STD":15.76,"80":13.84,"XS":13.84},"0.75":{"10S":22.48,"40":20.96,"STD":20.96,"80":18.88,"XS":18.88},"1":{"10S":27.86,"40":26.64,"STD":26.64,"80":24.3,"XS":24.3},"1.25":{"10S":36.66,"40":35.08,"STD":35.08,"80":32.5,"XS":32.5},"1.5":{"10S":42.76,"40":40.94,"STD":40.94,"80":38.14,"XS":38.14},"2":{"10S":54.76,"40":52.48,"STD":52.48,"80":49.22,"XS":49.22},"2.5":{"10S":66.9,"40":62.68,"STD":62.68,"80":58.98,"XS":58.98},"3":{"10S":82.8,"40":77.92,"STD":77.92,"80":73.66,"XS":73.66},"4":{"10S":108.2,"40":102.26,"STD":102.26,"80":97.18,"XS":97.18},"6":{"10S":161.5,"40":154.08,"STD":154.08,"80":146.36,"XS":146.36},"8":{"10S":211.58,"40":202.74,"STD":202.74,"80":193.7,"XS":193.7},"10":{"10S":264.72,"40":254.56,"STD":254.56,"80":242.92,"XS":247.7},"12":{"10S":314.66,"40":303.18,"STD":304.74,"80":288.84,"XS":298.4},"14":{"10S":346.04,"40":333.34,"STD":336.54,"80":317.5,"XS":330.2},"16":{"10S":396.84,"40":381.0,"STD":387.34,"80":363.52,"XS":381.0},"18":{"10S":447.44,"40":428.46,"STD":437.94,"80":409.34,"XS":431.6},"20":{"10S":496.92,"40":477.82,"STD":488.94,"80":455.62,"XS":482.6},"24":{"10S":597.3,"40":575.04,"STD":590.94,"80":548.08,"XS":584.6}},"materials":{"Carbon steel (new)":{"rough_mm":0.045,"k":45.0},"Carbon steel (corroded)":{"rough_mm":0.15,"k":45.0},"Stainless steel":{"rough_mm":0.015,"k":16.0},"Galvanised steel":{"rough_mm":0.15,"k":45.0},"Cast / ductile iron":{"rough_mm":0.26,"k":50.0},"Copper":{"rough_mm":0.0015,"k":380.0},"HDPE":{"rough_mm":0.007,"k":0.45},"PVC":{"rough_mm":0.0015,"k":0.19}},"elbows":{"lr90":"90 deg LR elbow (r/D=1.5)","sr90":"90 deg SR elbow (r/D=1)","mitre90":"90 deg mitre elbow"},"fittings":{"gate":"Gate valve (open)","ball":"Ball valve (full bore)","globe":"Globe valve (open)","butterfly":"Butterfly valve (open)","plug":"Plug valve (straight)","check":"Swing check valve","liftcheck":"Lift check valve","elbow45":"45 deg elbow (in-line)","strainer":"Y-strainer (clean, approx.)","customK":"Custom K value","fixeddp":"Fixed dP (equipment / meter)"},"thermal":{"insulation":{"None":null,"Mineral wool":0.04,"Glass wool":0.038,"Calcium silicate":0.055,"Cellular glass":0.045,"Polyurethane foam":0.025,"Polyisocyanurate (PIR)":0.027,"Elastomeric foam":0.036,"Aerogel blanket":0.015,"Custom":null},"jackets":{"Aluminium jacket":0.1,"Stainless jacket":0.2,"Painted / PVC jacket":0.9,"Bare (oxidised) steel":0.8},"environments":{"air_still":"Air - still / indoor","air_wind":"Air - outdoor with wind","buried":"Buried in soil"}},"coolprop":false,"directions":["east","west","north","south","up","down"]};
+
+  /* ---------------- Streamlit component bridge (no npm needed) ---------------- */
+  var ST = {
+    connected: false,
+    send: function (type, data) { try { window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, data || {}), "*"); } catch (e) {} },
+    ready: function () { this.send("streamlit:componentReady", { apiVersion: 1 }); },
+    setValue: function (v) { this.send("streamlit:setComponentValue", { value: v, dataType: "json" }); },
+    height: function () { this.send("streamlit:setFrameHeight", { height: Math.ceil(document.documentElement.scrollHeight) + 4 }); }
+  };
+
+  /* ---------------- 3D directions: x = East, y = North, z = Up ---------------- */
+  var DIR3 = { east: [1, 0, 0], west: [-1, 0, 0], north: [0, 1, 0], south: [0, -1, 0], up: [0, 0, 1], down: [0, 0, -1] };
+  var DIRS = Object.keys(DIR3);
+  var DLBL = { east: "East (+X)", west: "West (−X)", north: "North (+Y)", south: "South (−Y)", up: "Up (+Z)", down: "Down (−Z)" };
+  var DSH = { east: "E", west: "W", north: "N", south: "S", up: "Up", down: "Dn" };
+  var LEGACY = { right: "east", left: "west" };
+  var PERP = {};
+  DIRS.forEach(function (d) { PERP[d] = DIRS.filter(function (k) { var a = DIR3[d], b = DIR3[k]; return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] === 0; }); });
+  var TYPE_NAME = { pipe: "Pipe", elbow: "Elbow", tee: "Tee", fitting: "Valve/fitting", reducer: "Reducer", outlet: "Outlet" };
+  var VIEWS = { iso: [-45, 30], plan: [0, 90], south: [0, 0], east: [-90, 0] };
+
+  var S = {
+    cat: null, net: null, inited: false,
+    sel: { kind: "port", seg: "INLET", port: "out" },
+    editing: null, formSig: null,
+    results: null, stale: false, pendingNonce: null, restoreId: null,
+    hist: [], geo: null,
+    cam: { yaw: -45, pitch: 30, scale: 1, ox: 0, oy: 0, pivot: null },
+    scaleMode: "schematic", dragPan: false, W: 800, H: 580, T: null
+  };
+
+  function defaultNet() {
+    return {
+      version: 2,
+      inlet: { label: "Inlet", fluid: "Water", custom: {}, T: 30, T_unit: "degC", P: 6, P_unit: "barg", Q: 200, Q_unit: "m3/h",
+               heading: "east", elev: 0, size: { nps: "6", sch: "40" } },
+      pipe: { material: "Carbon steel (new)", rough_mm: "" },
+      thermal: { enabled: true, insulation: "None", thk_mm: 50, k_custom: 0.04, env: "air_still", T_amb: 30, wind: 3,
+                 jacket: "Aluminium jacket", depth: 1, k_soil: 1.2 },
+      options: { P_atm_bar: 1.01325, len_unit: "m" },
+      segments: []
+    };
+  }
+  function migrate(n) {
+    n.inlet.heading = LEGACY[n.inlet.heading] || n.inlet.heading || "east";
+    n.segments.forEach(function (s) { if (s.turn) s.turn = LEGACY[s.turn] || s.turn; if (s.branch_dir) s.branch_dir = LEGACY[s.branch_dir] || s.branch_dir; });
+    return n;
+  }
+
+  /* ---------------- helpers ---------------- */
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function num(v, d) { var x = parseFloat(v); return isFinite(x) ? x : d; }
+  function fmt(v, d) { if (v == null || v === "" || !isFinite(v)) return "–"; var a = Math.abs(v); d = d == null ? (a >= 1000 ? 0 : a >= 100 ? 1 : a >= 1 ? 3 : 4) : d; return Number(v).toFixed(d); }
+  function opts(list, sel, labels) { return list.map(function (k) { return '<option value="' + esc(k) + '"' + (String(k) === String(sel) ? " selected" : "") + ">" + esc(labels ? labels[k] || k : k) + "</option>"; }).join(""); }
+  function tUnitLbl(u) { return { degC: "°C", degF: "°F", K: "K" }[u] || u; }
+  function segById(id) { return S.net.segments.find(function (s) { return s.id === id; }); }
+  function outPorts(t) { return t === "tee" ? ["run", "branch"] : t === "outlet" ? [] : ["out"]; }
+  function sizeKey(sz) { if (!sz) return "?"; return sz.nps === "custom" ? "ID" + Math.round(num(sz.id_mm, 0) * 10) / 10 : "NPS" + sz.nps; }
+  function sizeLabel(sz) { if (!sz) return "?"; return sz.nps === "custom" ? "ID " + num(sz.id_mm, 0) + " mm" : sz.nps + '" Sch ' + sz.sch; }
+  function sizeID(sz) { if (!sz) return 100; if (sz.nps === "custom") return num(sz.id_mm, 100); var t = S.cat.id_table[sz.nps]; return t ? t[sz.sch] : 100; }
+  function strokeW(sz) { return Math.max(3, Math.min(14, 2 + Math.sqrt(sizeID(sz)) * 0.8)); }
+  function nextId() { var m = 0; S.net.segments.forEach(function (s) { var n = parseInt(String(s.id).replace(/\D/g, ""), 10); if (n > m) m = n; }); return "S" + (m + 1); }
+  function snapshot() { S.hist.push(JSON.stringify(S.net)); if (S.hist.length > 60) S.hist.shift(); }
+  function markStale() { if (S.results) S.stale = true; }
+  function lenToM(L) { var f = { m: 1, km: 1000, ft: 0.3048 }[S.net.options.len_unit] || 1; return num(L, 0) * f; }
+  function vadd(a, b, k) { k = k == null ? 1 : k; return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
+  function pipeUnits(Lm) { return Math.max(60, Math.min(220, 50 + 45 * Math.log10(1 + Math.max(0, Lm)))); }
+
+  /* ---------------- 3D layout ---------------- */
+  function layout() {
+    var net = S.net, kids = {}, geo = { segs: {}, ports: {}, pts: [] }, trueScale = S.scaleMode === "true";
+    var totL = 0; net.segments.forEach(function (s) { if (s.type === "pipe") totL += lenToM(s.L); });
+    var gap = trueScale ? Math.max(0.3, 0.012 * Math.max(totL, 10)) : 26;
+    geo.gap = gap;
+    net.segments.forEach(function (s) { var k = (s.parent || "INLET") + ":" + (s.port || "out"); (kids[k] = kids[k] || []).push(s); });
+    var h0 = DIR3[net.inlet.heading] ? net.inlet.heading : "east", O = [0, 0, 0];
+    geo.inlet = { a: vadd(O, DIR3[h0], -gap * 1.6), b: O, h: h0 };
+    geo.ports["INLET:out"] = { pos: O, h: h0, size: net.inlet.size, owner: "INLET", port: "out" };
+    geo.pts.push(geo.inlet.a, O);
+    function place(pkey) {
+      var p = geo.ports[pkey], ch = kids[pkey] || [];
+      p.open = ch.length === 0;
+      ch.forEach(function (s) {
+        var d = DIR3[p.h] || DIR3.east, size = s.type === "outlet" ? p.size : (s.size || p.size);
+        var g = { type: s.type, a: p.pos, hin: p.h, size: size, sizeIn: p.size };
+        if (s.type === "pipe") {
+          var Lm = lenToM(s.L), Lu = trueScale ? Lm : pipeUnits(Lm), vert = p.h === "up" || p.h === "down";
+          var frac = (!vert && Lm > 0) ? Math.max(-0.99, Math.min(0.99, num(s.dz, 0) / Lm)) : 0;
+          if (!trueScale && frac) frac = Math.sign(frac) * Math.max(Math.abs(frac), 0.08); // keep slope visible
+          g.b = vadd(vadd(p.pos, d, Lu * Math.sqrt(1 - frac * frac)), [0, 0, 1], Lu * frac);
+          geo.ports[s.id + ":out"] = { pos: g.b, h: p.h, size: size, owner: s.id, port: "out" };
+        } else if (s.type === "elbow") {
+          var t = DIR3[s.turn] || d;
+          g.c = vadd(p.pos, d, gap / 2); g.b = vadd(g.c, t, gap / 2);
+          geo.ports[s.id + ":out"] = { pos: g.b, h: DIR3[s.turn] ? s.turn : p.h, size: size, owner: s.id, port: "out" };
+        } else if (s.type === "tee") {
+          var bd = DIR3[s.branch_dir] || DIR3.up;
+          g.c = vadd(p.pos, d, gap / 2); g.b = vadd(p.pos, d, gap); g.bb = vadd(g.c, bd, gap * 0.75);
+          geo.ports[s.id + ":run"] = { pos: g.b, h: p.h, size: size, owner: s.id, port: "run" };
+          geo.ports[s.id + ":branch"] = { pos: g.bb, h: DIR3[s.branch_dir] ? s.branch_dir : "up", size: size, owner: s.id, port: "branch" };
+          geo.pts.push(g.bb);
+        } else if (s.type === "outlet") {
+          g.b = vadd(p.pos, d, gap * 0.8);
+        } else {
+          g.b = vadd(p.pos, d, gap);
+          geo.ports[s.id + ":out"] = { pos: g.b, h: p.h, size: size, owner: s.id, port: "out" };
+        }
+        geo.segs[s.id] = g; geo.pts.push(g.b);
+        outPorts(s.type).forEach(function (pt) { place(s.id + ":" + pt); });
+      });
+    }
+    place("INLET:out");
+    var mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    geo.pts.forEach(function (q) { for (var i = 0; i < 3; i++) { mn[i] = Math.min(mn[i], q[i]); mx[i] = Math.max(mx[i], q[i]); } });
+    geo.min = mn; geo.max = mx; geo.c = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
+    S.geo = geo;
+    return geo;
+  }
+
+  /* ---------------- validation (mirrors hydraulics.validate) ---------------- */
+  function validate() {
+    var errs = [], net = S.net, geo = S.geo;
+    if (!net.segments.length) { errs.push("Add at least one segment after the inlet."); return errs; }
+    Object.keys(geo.ports).forEach(function (k) {
+      var p = geo.ports[k];
+      if (p.open) errs.push("Open end at " + (p.owner === "INLET" ? "inlet" : p.owner) + (p.port !== "out" ? " (" + p.port + ")" : "") + " – terminate it with an Outlet.");
+    });
+    net.segments.forEach(function (s) {
+      var p = geo.ports[(s.parent || "INLET") + ":" + (s.port || "out")];
+      if (!p || s.type === "outlet") return;
+      if (s.type === "reducer") { if (sizeKey(s.size) === sizeKey(p.size)) errs.push(s.id + ": reducer outlet size equals inlet size."); }
+      else if (sizeKey(s.size) !== sizeKey(p.size)) errs.push("SIZE MISMATCH at " + s.id + ": " + sizeLabel(s.size) + " connected to " + sizeLabel(p.size) + ". Insert a reducer/expander.");
+      if (s.type === "elbow" && PERP[p.h].indexOf(s.turn) < 0) errs.push(s.id + ": elbow cannot turn " + s.turn + " while flow heads " + p.h + ".");
+      if (s.type === "tee" && PERP[p.h].indexOf(s.branch_dir) < 0) errs.push(s.id + ": tee branch must be perpendicular to flow (" + p.h + ").");
+      if (s.type === "pipe") {
+        if (!(num(s.L, 0) > 0)) errs.push(s.id + ": pipe length must be > 0.");
+        else if (p.h !== "up" && p.h !== "down" && Math.abs(num(s.dz, 0)) >= lenToM(s.L)) errs.push(s.id + ": |Δz| must be smaller than the pipe length.");
+      }
+    });
+    var outs = net.segments.filter(function (s) { return s.type === "outlet"; });
+    var blanks = outs.filter(function (o) { return o.Q === "" || o.Q == null; });
+    if (outs.length > 1 && blanks.length > 1) errs.push("Leave at most ONE outlet flow blank (it takes the remainder).");
+    if (outs.length && blanks.length <= 1 && outs.every(function (o) { return (o.Q_unit || net.inlet.Q_unit) === net.inlet.Q_unit; })) {
+      var sum = outs.reduce(function (a, o) { return a + num(o.Q, 0); }, 0), qin = num(net.inlet.Q, 0);
+      if (!blanks.length && Math.abs(sum - qin) > 0.005 * qin) errs.push("Mass balance: outlet flows sum to " + fmt(sum) + " " + net.inlet.Q_unit + " but inlet is " + fmt(qin) + ".");
+      if (blanks.length && sum >= qin) errs.push("Specified outlet flows (" + fmt(sum) + ") leave nothing for the blank outlet.");
+    }
+    if (!(num(net.inlet.Q, 0) > 0)) errs.push("Inlet flow must be > 0.");
+    return errs;
+  }
+
+  /* ---------------- camera / projection ---------------- */
+  function measure() { var el = $("svg"); S.W = el.clientWidth || 800; S.H = el.clientHeight || 580; }
+  function camTrig() { var y = S.cam.yaw * Math.PI / 180, p = S.cam.pitch * Math.PI / 180; return { cy: Math.cos(y), sy: Math.sin(y), cp: Math.cos(p), sp: Math.sin(p) }; }
+  function projRaw(v, T) { // v relative to pivot
+    var a = v[0] * T.cy - v[1] * T.sy, d = v[0] * T.sy + v[1] * T.cy;
+    return { x: a, y: -(v[2] * T.cp + d * T.sp), dep: d * T.cp - v[2] * T.sp };
+  }
+  function P2(pt) {
+    var pv = S.cam.pivot, r = projRaw([pt[0] - pv[0], pt[1] - pv[1], pt[2] - pv[2]], S.T);
+    return { x: S.W / 2 + S.cam.ox + r.x * S.cam.scale, y: S.H / 2 + S.cam.oy + r.y * S.cam.scale, dep: r.dep };
+  }
+  function sdir(dname) { // unit screen direction of a 3D direction (null if pointing at viewer)
+    var r = projRaw(DIR3[dname] || DIR3.east, S.T), L = Math.hypot(r.x, r.y);
+    return L < 0.12 ? null : [r.x / L, r.y / L];
+  }
+  function fit() {
+    measure(); var g = S.geo; S.cam.pivot = g.c.slice(); S.T = camTrig();
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    g.pts.forEach(function (q) { var r = projRaw([q[0] - g.c[0], q[1] - g.c[1], q[2] - g.c[2]], S.T); x0 = Math.min(x0, r.x); x1 = Math.max(x1, r.x); y0 = Math.min(y0, r.y); y1 = Math.max(y1, r.y); });
+    // margins leave room for labels (sides), the toolbar (top) and the legend (bottom)
+    var ml = 150, mr = 150, mt = S.W < 700 ? 150 : 120, mb = 70;
+    var sc = Math.min((S.W - ml - mr) / Math.max(x1 - x0, 1e-9), (S.H - mt - mb) / Math.max(y1 - y0, 1e-9));
+    sc = Math.min(sc, 3 * 26 / g.gap); if (!isFinite(sc) || sc <= 0) sc = 1;
+    S.cam.scale = sc; S.cam.ox = (ml - mr) / 2 - (x0 + x1) / 2 * sc; S.cam.oy = (mt - mb) / 2 - (y0 + y1) / 2 * sc;
+  }
+  function fitIfOut() {
+    var out = S.geo.pts.some(function (q) { var p = P2(q); return p.x < 20 || p.y < 20 || p.x > S.W - 20 || p.y > S.H - 20; });
+    if (out) { fit(); draw(); }
+  }
+  function setView(k) { S.cam.yaw = VIEWS[k][0]; S.cam.pitch = VIEWS[k][1]; fit(); draw(); }
+  function zoom(f, sx, sy) {
+    if (sx == null) { sx = S.W / 2; sy = S.H / 2; }
+    var ns = Math.max(1e-5, Math.min(1e4, S.cam.scale * f)), k = ns / S.cam.scale;
+    S.cam.ox = sx - S.W / 2 - (sx - S.W / 2 - S.cam.ox) * k; S.cam.oy = sy - S.H / 2 - (sy - S.H / 2 - S.cam.oy) * k;
+    S.cam.scale = ns; draw();
+  }
+
+  /* ---------------- SVG drawing ---------------- */
+  function pColor(P) {
+    var r = S.results; if (!r || !r.ok || S.stale || P == null) return "var(--pipe)";
+    var hi = r.summary.P_in, lo = Math.min.apply(null, r.outlets.map(function (o) { return o.P; }).concat([hi]));
+    var t = hi === lo ? 0 : Math.max(0, Math.min(1, (hi - P) / (hi - lo)));
+    return "hsl(" + (210 - 210 * t) + ",70%,45%)";
+  }
+  function ln(A, B, c, w, extra) { return '<line x1="' + A.x.toFixed(1) + '" y1="' + A.y.toFixed(1) + '" x2="' + B.x.toFixed(1) + '" y2="' + B.y.toFixed(1) + '" stroke="' + c + '" stroke-width="' + w + '" stroke-linecap="round"' + (extra || "") + "/>"; }
+  function pl(pts, c, w, extra) { return '<polyline points="' + pts.map(function (p) { return p.x.toFixed(1) + "," + p.y.toFixed(1); }).join(" ") + '" fill="none" stroke="' + c + '" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round"' + (extra || "") + "/>"; }
+  function txt(x, y, s, anc, fs, fill, fw) { return '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + fs + '" text-anchor="' + anc + '" fill="' + fill + '"' + (fw ? ' font-weight="' + fw + '"' : "") + ' paint-order="stroke" stroke="var(--panel)" stroke-width="3">' + esc(s) + "</text>"; }
+  function ptag(x, y, s) { return '<g pointer-events="none"><rect x="' + (x - 23).toFixed(1) + '" y="' + (y - 7).toFixed(1) + '" width="46" height="14" rx="3" fill="var(--panel)" stroke="var(--line)"/>' + '<text x="' + x.toFixed(1) + '" y="' + (y + 3).toFixed(1) + '" font-size="9" text-anchor="middle" fill="var(--ink)">' + esc(s) + "</text></g>"; }
+  function normal(u) { var n = [-u[1], u[0]]; if (n[1] > 0 || (n[1] === 0 && n[0] < 0)) n = [-n[0], -n[1]]; return n; } // points "up" on screen
+  function anchorFor(n) { return n[0] > 0.5 ? "start" : n[0] < -0.5 ? "end" : "middle"; }
+
+  function draw() {
+    if (!S.net) return;
+    var geo = layout(); measure();
+    if (!S.cam.pivot) fit();
+    S.T = camTrig();
+    var svg = $("svg"), net = S.net, res = (S.results && S.results.ok && !S.stale) ? S.results : null;
+    var showP = $("showP").checked, showG = $("showShadow").checked, Pu = net.inlet.P_unit;
+    var back = [], prims = [], over = [], zg = geo.min[2];
+
+    /* ground grid + shadows */
+    if (showG) {
+      var pad = geo.gap * 2, gx0 = geo.min[0] - pad, gx1 = geo.max[0] + pad, gy0 = geo.min[1] - pad, gy1 = geo.max[1] + pad;
+      var span = Math.max(gx1 - gx0, gy1 - gy0), step = niceStep(span / 8);
+      var sx0 = Math.floor(gx0 / step) * step, sy0 = Math.floor(gy0 / step) * step;
+      for (var gx = sx0; gx <= gx1 + 1e-9; gx += step) back.push(ln(P2([gx, sy0, zg]), P2([gx, gy1, zg]), "var(--grid)", 1));
+      for (var gy = sy0; gy <= gy1 + 1e-9; gy += step) back.push(ln(P2([sx0, gy, zg]), P2([gx1, gy, zg]), "var(--grid)", 1));
+      var sh = function (a, b) { back.push(ln(P2([a[0], a[1], zg]), P2([b[0], b[1], zg]), "var(--muted)", 2, ' opacity="0.25"')); };
+      sh(geo.inlet.a, geo.inlet.b);
+      net.segments.forEach(function (s) { var g = geo.segs[s.id]; if (!g) return; if (g.c) { sh(g.a, g.c); sh(g.c, g.bb || g.b); if (g.bb) sh(g.a, g.b); } else sh(g.a, g.b); });
+      // vertical drop lines to ground at outlets + inlet (depth cue)
+      var drop = function (q) { if (q[2] - zg > 1e-6) back.push(ln(P2(q), P2([q[0], q[1], zg]), "var(--muted)", 1, ' stroke-dasharray="3 4" opacity="0.5"')); };
+      drop(geo.inlet.a); net.segments.forEach(function (s) { if (s.type === "outlet" && geo.segs[s.id]) drop(geo.segs[s.id].b); });
+      if (step) over.push('<text x="' + 10 + '" y="' + (S.H - 34) + '" font-size="10" fill="var(--muted)">Grid ' + fmtLen(step) + "</text>");
+    }
+
+    /* inlet */
+    var IA = P2(geo.inlet.a), IB = P2(geo.inlet.b), iw = strokeW(net.inlet.size), iu = sdir(geo.inlet.h) || [1, 0];
+    prims.push({ dep: (IA.dep + IB.dep) / 2, html: '<g class="seg" data-seg="INLET">' + ln(IA, IB, pColor(res ? res.summary.P_in : null), iw) + '<circle cx="' + IA.x + '" cy="' + IA.y + '" r="7" fill="var(--accent)"/></g>' });
+    var ilx = IA.x - iu[0] * 14, ily = IA.y - iu[1] * 14, ianc = iu[0] > 0.3 ? "end" : iu[0] < -0.3 ? "start" : "middle";
+    over.push(txt(ilx, ily - 4, net.inlet.label || "Inlet", ianc, 12, "var(--accent)", 700));
+    over.push(txt(ilx, ily + 10, fmt(num(net.inlet.P, 0)) + " " + Pu + " · " + num(net.inlet.T, 0) + tUnitLbl(net.inlet.T_unit) + " · Z " + num(net.inlet.elev, 0) + " m", ianc, 10, "var(--muted)"));
+
+    /* segments */
+    net.segments.forEach(function (s) {
+      var g = geo.segs[s.id]; if (!g) return;
+      var node = res && res.nodes[s.id], Pout = node ? (node.P_out != null ? node.P_out : node.P_in) : null;
+      var col = pColor(Pout), w = strokeW(g.size), sel = (S.sel.kind === "seg" && S.sel.seg === s.id);
+      var bad = s.type !== "outlet" && (s.type === "reducer" ? sizeKey(s.size) === sizeKey(g.sizeIn) : sizeKey(s.size) !== sizeKey(g.sizeIn));
+      if (bad) col = "var(--bad)";
+      var A = P2(g.a), B = P2(g.b), u = sdir(g.hin), html = "", dep = (A.dep + B.dep) / 2;
+      var halo = function (pts) { return sel ? pl(pts, "var(--accent)", w + 10, ' opacity="0.35"') : ""; };
+      if (s.type === "pipe") {
+        html += halo([A, B]) + ln(A, B, col, w);
+        var len = Math.hypot(B.x - A.x, B.y - A.y), su = len > 1 ? [(B.x - A.x) / len, (B.y - A.y) / len] : [1, 0], n = normal(su);
+        var M = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, ext = Math.abs(n[0]) > 0.5 ? 0 : 0;
+        var lab = s.id + " · " + num(s.L, 0) + " " + net.options.len_unit + (num(s.dz, 0) && g.hin !== "up" && g.hin !== "down" ? " · Δz " + (num(s.dz, 0) > 0 ? "+" : "") + num(s.dz, 0) + " m" : "");
+        over.push(txt(M.x + n[0] * (w / 2 + 9 + ext), M.y + n[1] * (w / 2 + 9) + 3, lab, anchorFor(n), 10, "var(--muted)"));
+        if (len > 70) over.push(txt(M.x - n[0] * (w / 2 + 9), M.y - n[1] * (w / 2 + 9) + 4, sizeLabel(s.size) + " · " + DSH[g.hin], anchorFor([-n[0], -n[1]]), 9, "var(--muted)"));
+        if (showP && node && node.P_out != null) over.push(ptag(B.x - n[0] * (w / 2 + 14), B.y - n[1] * (w / 2 + 14), fmt(node.P_out)));
+      } else if (s.type === "elbow") {
+        var C = P2(g.c);
+        html += halo([A, C, B]) + pl([A, C, B], col, w) + '<circle cx="' + C.x + '" cy="' + C.y + '" r="' + (w / 2 + 6) + '" fill="transparent"/>';
+        over.push(txt(C.x + 9, C.y - 9, s.id, "start", 9, "var(--muted)"));
+      } else if (s.type === "tee") {
+        var C2 = P2(g.c), BB = P2(g.bb), bP = node && node.ports ? node.ports.branch : null;
+        html += halo([A, B]) + (sel ? pl([C2, BB], "var(--accent)", w + 10, ' opacity="0.35"') : "") + ln(A, B, col, w) + ln(C2, BB, bad ? col : pColor(bP), w) +
+          '<circle cx="' + C2.x + '" cy="' + C2.y + '" r="' + (w / 2 + 3) + '" fill="var(--panel)" stroke="' + col + '" stroke-width="2"/>';
+        dep = Math.max(A.dep, B.dep, BB.dep) - 1e-6;
+        over.push(txt(C2.x + 10, C2.y + 16, s.id + " tee", "start", 9, "var(--muted)"));
+        if (showP && node && node.ports) {
+          if (node.ports.run != null) over.push(ptag(B.x + 26, B.y + 14, fmt(node.ports.run)));
+          if (node.ports.branch != null) over.push(ptag(BB.x + 26, BB.y + 14, fmt(node.ports.branch)));
+        }
+      } else if (s.type === "fitting") {
+        html += halo([A, B]) + ln(A, B, col, w);
+        var cx = (A.x + B.x) / 2, cy = (A.y + B.y) / 2;
+        if (u) {
+          var nn = [-u[1], u[0]], a = 8, b = 9;
+          html += '<polygon points="' + [cx - u[0] * a + nn[0] * b, cy - u[1] * a + nn[1] * b, cx - u[0] * a - nn[0] * b, cy - u[1] * a - nn[1] * b, cx + u[0] * a + nn[0] * b, cy + u[1] * a + nn[1] * b, cx + u[0] * a - nn[0] * b, cy + u[1] * a - nn[1] * b].map(function (v) { return v.toFixed(1); }).join(",") + '" fill="var(--panel)" stroke="' + col + '" stroke-width="2"/>';
+        } else html += '<circle cx="' + cx + '" cy="' + cy + '" r="9" fill="var(--panel)" stroke="' + col + '" stroke-width="2"/><text x="' + cx + '" y="' + (cy + 3) + '" font-size="8" text-anchor="middle" fill="' + col + '">V</text>';
+        var fl = s.fitting === "fixeddp" ? "ΔP" : s.fitting === "customK" ? "K" : (S.cat.fittings[s.fitting] || "").split(" ")[0];
+        var fn = normal(u || [1, 0]);
+        over.push(txt(cx + fn[0] * 16, cy + fn[1] * 16, s.id + " " + fl, anchorFor(fn), 9, "var(--muted)"));
+      } else if (s.type === "reducer") {
+        var ru = u || [1, 0], rn = [-ru[1], ru[0]], w1 = strokeW(g.sizeIn) / 2 + 2, w2 = strokeW(s.size) / 2 + 2;
+        html += halo([A, B]) + '<polygon points="' + [A.x + rn[0] * w1, A.y + rn[1] * w1, B.x + rn[0] * w2, B.y + rn[1] * w2, B.x - rn[0] * w2, B.y - rn[1] * w2, A.x - rn[0] * w1, A.y - rn[1] * w1].map(function (v) { return v.toFixed(1); }).join(",") + '" fill="' + col + '" opacity="0.9"/>';
+        var rnn = normal(ru);
+        over.push(txt((A.x + B.x) / 2 + rnn[0] * 16, (A.y + B.y) / 2 + rnn[1] * 16, s.id + " → " + (s.size.nps === "custom" ? sizeLabel(s.size) : s.size.nps + '"'), anchorFor(rnn), 9, "var(--muted)"));
+      } else if (s.type === "outlet") {
+        var o = res && res.outlets.find(function (q) { return q.id === s.id; });
+        var oc = res ? ((o && !o.feasible) ? "var(--bad)" : "var(--ok)") : "var(--accent)";
+        html += halo([A, B]) + ln(A, B, col, w);
+        var ou = u || [0.7, -0.7];
+        html += u ? '<polygon points="' + [B.x + ou[0] * 13, B.y + ou[1] * 13, B.x - ou[1] * 8, B.y + ou[0] * 8, B.x + ou[1] * 8, B.y - ou[0] * 8].map(function (v) { return v.toFixed(1); }).join(",") + '" fill="' + oc + '"/>'
+          : '<circle cx="' + B.x + '" cy="' + B.y + '" r="8" fill="' + oc + '"/>';
+        var lx = B.x + ou[0] * 24, ly = B.y + ou[1] * 24, anc = ou[0] > 0.3 ? "start" : ou[0] < -0.3 ? "end" : "middle";
+        over.push(txt(lx, ly, s.label || s.id, anc, 12, oc, 700));
+        var sub = o ? fmt(o.P) + " " + Pu + " · " + fmt(o.T, 1) + tUnitLbl(net.inlet.T_unit) + " · Z " + fmt(o.Z, 1) + " m"
+          : (s.Q === "" || s.Q == null ? "flow = remainder" : s.Q + " " + (s.Q_unit || net.inlet.Q_unit));
+        over.push(txt(lx, ly + 13, sub, anc, 10, "var(--muted)"));
+      }
+      prims.push({ dep: dep, html: '<g class="seg" data-seg="' + s.id + '">' + html + "</g>" });
+    });
+
+    /* open ports */
+    Object.keys(geo.ports).forEach(function (k) {
+      var p = geo.ports[k]; if (!p.open) return;
+      var on = S.sel.kind === "port" && S.sel.seg === p.owner && S.sel.port === p.port;
+      var Q = P2(p.pos), u = sdir(p.h) || [0.7, -0.7], cx = Q.x + u[0] * 13, cy = Q.y + u[1] * 13;
+      over.push('<g class="port" data-seg="' + p.owner + '" data-port="' + p.port + '" tabindex="0" role="button" aria-label="Add segment at ' + (p.owner === "INLET" ? "inlet" : p.owner) + " " + p.port + '">' +
+        '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + (on ? 11 : 9) + '" fill="' + (on ? "var(--ok)" : "var(--okbg)") + '" stroke="var(--ok)" stroke-width="2"/>' +
+        '<text x="' + cx.toFixed(1) + '" y="' + (cy + 4).toFixed(1) + '" font-size="13" font-weight="700" text-anchor="middle" fill="' + (on ? "#fff" : "var(--ok)") + '">+</text></g>');
+    });
+
+    /* axis gizmo */
+    var gzx = S.W - 46, gzy = S.H - 46, gz = '<g pointer-events="none"><circle cx="' + gzx + '" cy="' + gzy + '" r="36" fill="var(--panel)" stroke="var(--line)"/>';
+    [["east", "E", "#d13438"], ["north", "N", "#107c41"], ["up", "Z", "#0f6cbd"]].forEach(function (a) {
+      var r = projRaw(DIR3[a[0]], S.T), ex = gzx + r.x * 26, ey = gzy + r.y * 26;
+      gz += '<line x1="' + gzx + '" y1="' + gzy + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) + '" stroke="' + a[2] + '" stroke-width="2.5" stroke-linecap="round"/>' +
+        '<text x="' + (gzx + r.x * 33).toFixed(1) + '" y="' + (gzy + r.y * 33 + 4).toFixed(1) + '" font-size="10" font-weight="700" text-anchor="middle" fill="' + a[2] + '">' + a[1] + "</text>";
+    });
+    over.push(gz + "</g>");
+
+    prims.sort(function (p, q) { return q.dep - p.dep; });
+    svg.setAttribute("viewBox", "0 0 " + S.W + " " + S.H);
+    svg.innerHTML = back.join("") + prims.map(function (p) { return p.html; }).join("") + over.join("");
+    updateSelInfo();
+  }
+  function niceStep(x) { if (!(x > 0)) return 1; var p = Math.pow(10, Math.floor(Math.log10(x))), e = x / p; return (e >= 5 ? 5 : e >= 2 ? 2 : 1) * p; }
+  function fmtLen(step) { return S.scaleMode === "true" ? (step >= 1000 ? step / 1000 + " km" : step + " m") + " squares" : "schematic"; }
+
+  /* ---------------- canvas interaction: rotate / pan / zoom / pick ---------------- */
+  (function () {
+    var svg = $("svg"), drag = null;
+    svg.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    svg.addEventListener("wheel", function (e) { e.preventDefault(); var r = svg.getBoundingClientRect(); zoom(e.deltaY > 0 ? 1 / 1.15 : 1.15, (e.clientX - r.left) * S.W / r.width, (e.clientY - r.top) * S.H / r.height); }, { passive: false });
+    svg.addEventListener("pointerdown", function (e) {
+      drag = { x: e.clientX, y: e.clientY, yaw: S.cam.yaw, pitch: S.cam.pitch, ox: S.cam.ox, oy: S.cam.oy, moved: false,
+               pan: S.dragPan || e.shiftKey || e.button === 2 || e.button === 1, id: e.pointerId };
+    });
+    svg.addEventListener("pointermove", function (e) {
+      if (!drag) return; var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved && Math.abs(dx) + Math.abs(dy) > 4) { drag.moved = true; svg.style.cursor = drag.pan ? "move" : "grabbing"; try { svg.setPointerCapture(drag.id); } catch (er) {} }
+      if (!drag.moved) return;
+      if (drag.pan) { S.cam.ox = drag.ox + dx; S.cam.oy = drag.oy + dy; }
+      else { S.cam.yaw = drag.yaw + dx * 0.4; S.cam.pitch = Math.max(-30, Math.min(90, drag.pitch + dy * 0.3)); }
+      draw();
+    });
+    svg.addEventListener("pointerup", function (e) {
+      var moved = drag && drag.moved; drag = null; svg.style.cursor = "grab"; if (moved) return;
+      var t = e.target.closest ? e.target.closest("[data-seg]") : null; if (!t) return;
+      if (t.getAttribute("data-port")) selectPort(t.getAttribute("data-seg"), t.getAttribute("data-port"));
+      else selectSeg(t.getAttribute("data-seg"));
+    });
+    svg.addEventListener("pointercancel", function () { drag = null; svg.style.cursor = "grab"; });
+    svg.addEventListener("keydown", function (e) {
+      var t = e.target.closest ? e.target.closest("[data-port]") : null;
+      if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); selectPort(t.getAttribute("data-seg"), t.getAttribute("data-port")); return; }
+      var k = { ArrowLeft: [-15, 0], ArrowRight: [15, 0], ArrowUp: [0, 10], ArrowDown: [0, -10] }[e.key];
+      if (k) { e.preventDefault(); S.cam.yaw += k[0]; S.cam.pitch = Math.max(-30, Math.min(90, S.cam.pitch + k[1])); draw(); }
+    });
+    Array.prototype.forEach.call(root.querySelectorAll("[data-view]"), function (b) { b.addEventListener("click", function () { setView(b.getAttribute("data-view")); }); });
+    $("zFit").addEventListener("click", function () { fit(); draw(); });
+    $("rotL").addEventListener("click", function () { S.cam.yaw -= 15; draw(); });
+    $("rotR").addEventListener("click", function () { S.cam.yaw += 15; draw(); });
+    $("tiltU").addEventListener("click", function () { S.cam.pitch = Math.min(90, S.cam.pitch + 10); draw(); });
+    $("tiltD").addEventListener("click", function () { S.cam.pitch = Math.max(-30, S.cam.pitch - 10); draw(); });
+    $("zIn").addEventListener("click", function () { zoom(1.25); });
+    $("zOut").addEventListener("click", function () { zoom(1 / 1.25); });
+    $("dragMode").addEventListener("click", function () { S.dragPan = !S.dragPan; this.textContent = "Drag: " + (S.dragPan ? "pan" : "rotate"); this.classList.toggle("on", S.dragPan); });
+    $("scaleMode").addEventListener("change", function () { S.scaleMode = this.value; S.cam.pivot = null; draw(); });
+    $("showP").addEventListener("change", draw);
+    $("showShadow").addEventListener("change", draw);
+  })();
+
+  /* ---------------- selection ---------------- */
+  function selectPort(seg, port) { S.sel = { kind: "port", seg: seg, port: port }; cancelEdit(); draw(); renderForm(); renderSel(); }
+  function selectSeg(id) {
+    if (id === "INLET") { selectPort("INLET", "out"); return; }
+    S.sel = { kind: "seg", seg: id }; draw(); renderSel(); renderForm();
+  }
+  function updateSelInfo() {
+    var p = currentPort(), t;
+    if (S.editing) t = "Editing " + S.editing;
+    else if (S.sel.kind === "seg") t = "Selected " + S.sel.seg + " (" + TYPE_NAME[(segById(S.sel.seg) || {}).type] + ")";
+    else if (p) t = "Adding at " + (p.owner === "INLET" ? "inlet" : p.owner) + (p.port !== "out" ? " · " + p.port : "") + " · flow " + DLBL[p.h] + " · " + sizeLabel(p.size);
+    else t = "Select an open end (+)";
+    $("selInfo").textContent = t;
+  }
+  function currentPort() {
+    if (!S.geo) return null;
+    if (S.editing) { var s = segById(S.editing); return s ? S.geo.ports[(s.parent || "INLET") + ":" + (s.port || "out")] : null; }
+    if (S.sel.kind !== "port") return null;
+    var p = S.geo.ports[S.sel.seg + ":" + S.sel.port];
+    return p && p.open ? p : null;
+  }
+
+  /* ---------------- size picker ---------------- */
+  function sizePicker(prefix, sz, title) {
+    sz = sz || { nps: "6", sch: "40" };
+    return '<div class="row"><label>' + (title || "Size (NPS)") + '<select id="' + prefix + '_nps">' + opts(S.cat.nps.concat(["custom"]), sz.nps, { custom: "Custom ID" }) + "</select></label>" +
+      '<label>Schedule<select id="' + prefix + '_sch"' + (sz.nps === "custom" ? " disabled" : "") + ">" + opts(S.cat.schedules, sz.sch || "40") + "</select></label></div>" +
+      '<div class="row' + (sz.nps === "custom" ? "" : " hidden") + '" id="' + prefix + '_cust"><label>ID mm<input id="' + prefix + '_id" type="number" value="' + esc(sz.id_mm || 150) + '"></label><label>Wall mm<input id="' + prefix + '_wall" type="number" value="' + esc(sz.wall_mm || 6) + '"></label></div>' +
+      '<div class="hint" id="' + prefix + '_idinfo"></div>';
+  }
+  function readSize(prefix) {
+    var nps = $(prefix + "_nps").value;
+    if (nps === "custom") return { nps: "custom", id_mm: num($(prefix + "_id").value, 150), wall_mm: num($(prefix + "_wall").value, 6) };
+    return { nps: nps, sch: $(prefix + "_sch").value };
+  }
+  function sizeInfo(prefix) {
+    var el = $(prefix + "_idinfo"); if (!el) return; var sz = readSize(prefix);
+    $(prefix + "_cust").classList.toggle("hidden", sz.nps !== "custom"); $(prefix + "_sch").disabled = sz.nps === "custom";
+    el.textContent = "Internal diameter ≈ " + fmt(sizeID(sz), 1) + " mm";
+  }
+
+  /* ---------------- add / edit form ---------------- */
+  function dirSelect(id, list, val) { return '<select id="' + id + '">' + opts(list, list.indexOf(val) >= 0 ? val : list[0], DLBL) + "</select>"; }
+  function renderForm(force) {
+    var p = currentPort(), type = $("s_type").value, s = S.editing ? segById(S.editing) : null, f = [];
+    var sig = [type, p ? p.owner + ":" + p.port + ":" + p.h + ":" + sizeKey(p.size) + (p.size && p.size.sch) : "-", S.editing || "", S.net.options.len_unit, S.net.inlet.P_unit, S.net.inlet.Q_unit, S.net.segments.length, S.hist.length].join("|");
+    if (sig === S.formSig && !force) { checkForm(); updateSelInfo(); return; }
+    S.formSig = sig;
+    $("formTitle").textContent = s ? "Edit " + s.id : "Add segment";
+    $("bAdd").textContent = s ? "Update segment" : "Add segment";
+    $("bCancelEdit").classList.toggle("hidden", !s);
+    $("s_type").disabled = !!s;
+    if (!p) { $("atPort").textContent = "Select an open end (green +) on the canvas, or a segment to edit."; $("s_fields").innerHTML = ""; $("s_alert").innerHTML = ""; $("bAdd").disabled = true; updateSelInfo(); ST.height(); return; }
+    $("atPort").innerHTML = "Connecting to <b>" + (p.owner === "INLET" ? esc(S.net.inlet.label || "Inlet") : p.owner) + (p.port !== "out" ? " · " + p.port : "") + "</b> · flow heading <b>" + DLBL[p.h] + "</b> · upstream size <b>" + esc(sizeLabel(p.size)) + "</b>";
+    var v = s || {}, Lu = S.net.options.len_unit, vert = p.h === "up" || p.h === "down";
+    if (type === "pipe") {
+      f.push('<div class="row"><label>Length (' + Lu + ')<input id="f_L" type="number" min="0" value="' + esc(v.L != null ? v.L : 100) + '"></label><label>Direction<input disabled value="' + DLBL[p.h] + '"></label></div>');
+      if (!vert) f.push('<div class="row"><label>Elevation change Δz over this run (m)<input id="f_dz" type="number" step="0.01" value="' + esc(v.dz || 0) + '"></label><label>&nbsp;<span class="hint" style="margin:6px 0 0">+ rising / − falling (slope)</span></label></div>');
+      f.push('<div class="hint">A pipe runs in the current flow direction. Use an <b>elbow</b> to turn E/W/N/S/Up/Down.</div>');
+      f.push(sizePicker("f", v.size || p.size));
+    } else if (type === "elbow") {
+      f.push('<div class="row"><label>Turn to' + dirSelect("f_turn", PERP[p.h], v.turn) + '</label><label>Elbow type<select id="f_elbow">' + opts(Object.keys(S.cat.elbows), v.elbow || "lr90", S.cat.elbows) + "</select></label></div>");
+      f.push(sizePicker("f", v.size || p.size));
+    } else if (type === "tee") {
+      f.push('<div class="row"><label>Branch direction' + dirSelect("f_bdir", PERP[p.h], v.branch_dir) + '</label><label>Run<input disabled value="continues ' + DLBL[p.h] + '"></label></div>');
+      f.push('<div class="hint">Equal tee. Two new open ends appear: <b>run</b> and <b>branch</b>.</div>');
+      f.push(sizePicker("f", v.size || p.size));
+    } else if (type === "fitting") {
+      var ft = v.fitting || "gate";
+      f.push('<div class="row one"><label>Type<select id="f_fit">' + opts(Object.keys(S.cat.fittings), ft, S.cat.fittings) + "</select></label></div>");
+      f.push('<div class="row' + (ft === "customK" ? "" : " hidden") + '" id="f_kbox"><label>K value<input id="f_K" type="number" value="' + esc(v.K != null ? v.K : 1) + '"></label><span></span></div>');
+      f.push('<div class="row' + (ft === "fixeddp" ? "" : " hidden") + '" id="f_dpbox"><label>Fixed ΔP (' + esc(dpUnit()) + ')<input id="f_dp" type="number" value="' + esc(v.dp != null ? v.dp : 0.5) + '"></label><span></span></div>');
+      f.push(sizePicker("f", v.size || p.size));
+    } else if (type === "reducer") {
+      var up = p.size, sug = v.size || { nps: up.nps === "custom" ? "custom" : (S.cat.nps[Math.max(0, S.cat.nps.indexOf(up.nps) - 1)]), sch: up.sch || "40", id_mm: up.id_mm };
+      f.push(sizePicker("f", sug, "NEW size after reducer/expander"));
+      f.push('<div class="row"><label>Included angle °<input id="f_ang" type="number" value="' + esc(v.angle || 30) + '"></label><label>From<input disabled value="' + esc(sizeLabel(up)) + '"></label></div>');
+    } else if (type === "outlet") {
+      f.push('<div class="row one"><label>Outlet label (rename as you like)<input id="f_lbl" value="' + esc(v.label || ("Outlet " + (S.net.segments.filter(function (q) { return q.type === "outlet"; }).length + 1))) + '"></label></div>');
+      f.push('<div class="row"><label>Flow (blank = remainder)<input id="f_Q" type="number" value="' + esc(v.Q != null ? v.Q : "") + '"></label><label>Unit<select id="f_Qu">' + opts(S.cat.flow_units, v.Q_unit || S.net.inlet.Q_unit) + "</select></label></div>");
+      f.push('<div class="row"><label>Min. required P (' + esc(S.net.inlet.P_unit) + ', optional)<input id="f_Pmin" type="number" value="' + esc(v.Pmin != null ? v.Pmin : "") + '"></label><span></span></div>');
+      f.push('<div class="hint">Single path: leave flow blank (= inlet flow). After a tee: key in flows; one outlet may be blank. Volumetric outlet flows use inlet density.</div>');
+    }
+    $("s_fields").innerHTML = f.join("");
+    ["f_nps", "f_sch", "f_id", "f_wall"].forEach(function (id) { var el = $(id); if (el) el.addEventListener("input", function () { sizeInfo("f"); checkForm(); }); });
+    var fit_ = $("f_fit"); if (fit_) fit_.addEventListener("change", function () { $("f_kbox").classList.toggle("hidden", fit_.value !== "customK"); $("f_dpbox").classList.toggle("hidden", fit_.value !== "fixeddp"); });
+    if ($("f_nps")) sizeInfo("f");
+    checkForm(); updateSelInfo(); ST.height();
+  }
+  function dpUnit() { return { barg: "bar", bara: "bar", kPag: "kPa", kPaa: "kPa", MPag: "MPa", MPaa: "MPa", psig: "psi", psia: "psi", "kg/cm2g": "kg/cm2" }[S.net.inlet.P_unit] || "bar"; }
+  function checkForm() {
+    var p = currentPort(), type = $("s_type").value, a = $("s_alert"), ok = true, msg = "";
+    if (!p) { $("bAdd").disabled = true; return; }
+    if ($("f_nps")) {
+      var sz = readSize("f");
+      if (type === "reducer") { if (sizeKey(sz) === sizeKey(p.size)) { ok = false; msg = "Reducer/expander must change the size (currently same as upstream " + sizeLabel(p.size) + ")."; } }
+      else if (sizeKey(sz) !== sizeKey(p.size)) { ok = false; msg = "⚠ SIZE MISMATCH: " + sizeLabel(sz) + " cannot connect to upstream " + sizeLabel(p.size) + ". Insert a Reducer / expander first."; }
+      else if (sz.sch !== p.size.sch && sz.nps !== "custom") msg = "Note: schedule differs from upstream (" + p.size.sch + ") – allowed, ID changes slightly.";
+    }
+    if (type === "pipe") {
+      var Lm = lenToM($("f_L").value);
+      if (!(Lm > 0)) { ok = false; msg = "Pipe length must be > 0."; }
+      else if ($("f_dz") && Math.abs(num($("f_dz").value, 0)) >= Lm) { ok = false; msg = "|Δz| must be smaller than the pipe length (" + fmt(Lm) + " m)."; }
+    }
+    a.innerHTML = msg ? '<div class="alert ' + (ok ? "warn" : "bad") + '">' + esc(msg) + "</div>" : "";
+    $("bAdd").disabled = !ok;
+  }
+  function readSeg(type) {
+    var s = { type: type };
+    if ($("f_nps")) s.size = readSize("f");
+    if (type === "pipe") { s.L = num($("f_L").value, 0); s.dz = $("f_dz") ? num($("f_dz").value, 0) : 0; }
+    if (type === "elbow") { s.turn = $("f_turn").value; s.elbow = $("f_elbow").value; }
+    if (type === "tee") s.branch_dir = $("f_bdir").value;
+    if (type === "fitting") { s.fitting = $("f_fit").value; s.K = num($("f_K").value, 0); s.dp = num($("f_dp").value, 0); }
+    if (type === "reducer") s.angle = num($("f_ang").value, 30);
+    if (type === "outlet") { s.label = $("f_lbl").value || "Outlet"; var q = $("f_Q").value; s.Q = q === "" ? "" : num(q, 0); s.Q_unit = $("f_Qu").value; var pm = $("f_Pmin").value; s.Pmin = pm === "" ? "" : num(pm, 0); }
+    return s;
+  }
+  function addOrUpdate() {
+    var p = currentPort(); if (!p) return;
+    var type = $("s_type").value, s = readSeg(type);
+    snapshot();
+    if (S.editing) {
+      var old = segById(S.editing); Object.keys(s).forEach(function (k) { old[k] = s[k]; });
+      var id = S.editing; S.editing = null; markStale(); S.sel = { kind: "seg", seg: id };
+      draw(); renderAll(); fitIfOut(); return;
+    }
+    s.id = nextId(); s.parent = p.owner === "INLET" ? null : p.owner; s.port = p.port;
+    S.net.segments.push(s); markStale();
+    var np = outPorts(type);
+    S.sel = np.length ? { kind: "port", seg: s.id, port: np[0] } : { kind: "seg", seg: s.id };
+    if (!np.length) { layout(); var open = Object.keys(S.geo.ports).filter(function (k) { return S.geo.ports[k].open; }); if (open.length) { var q = S.geo.ports[open[0]]; S.sel = { kind: "port", seg: q.owner, port: q.port }; } }
+    if (type !== "pipe" && type !== "outlet") $("s_type").value = "pipe";
+    draw(); renderAll(); fitIfOut();
+  }
+  function cancelEdit() { if (S.editing) { S.editing = null; $("s_type").disabled = false; } }
+  function descendants(id) { var out = [id]; S.net.segments.forEach(function (s) { if (s.parent === id) out = out.concat(descendants(s.id)); }); return out; }
+  function renderSel() {
+    var b = $("selBody");
+    if (S.sel.kind !== "seg") { b.className = "hint"; b.innerHTML = "Click a segment on the canvas to edit or delete it."; ST.height(); return; }
+    var s = segById(S.sel.seg); if (!s) { b.innerHTML = ""; return; }
+    var d = descendants(s.id).length - 1, rows = (S.results && !S.stale && S.results.ok) ? S.results.rows.filter(function (r) { return r.Segment === s.id || r.Segment.indexOf(s.id + ".") === 0; }) : [];
+    var html = "<div><b>" + s.id + "</b> · " + TYPE_NAME[s.type] + (s.size ? " · " + esc(sizeLabel(s.size)) : "") + (s.type === "pipe" ? " · " + s.L + " " + S.net.options.len_unit + (num(s.dz, 0) ? " · Δz " + s.dz + " m" : "") : "") + (s.turn ? " · turn " + DLBL[s.turn] : "") + (s.branch_dir ? " · branch " + DLBL[s.branch_dir] : "") + (s.label ? " · " + esc(s.label) : "") + "</div>";
+    rows.forEach(function (r) {
+      var k = Object.keys(r), g = function (pre) { var kk = k.find(function (x) { return x.indexOf(pre) === 0; }); return kk ? r[kk] : null; };
+      html += '<div class="hint">' + esc(r.Segment) + ": v=" + fmt(r["Velocity in [m/s]"]) + " m/s · Re=" + fmt(r["Re [-]"], 0) + " (" + r.Regime + ") · ΔP=" + fmt(g("dP total")) + " " + dpUnit() + " · P out=" + fmt(g("P out")) + " " + esc(S.net.inlet.P_unit) +
+        " · end (E,N,Z) = (" + fmt(r["End E [m]"], 1) + ", " + fmt(r["End N [m]"], 1) + ", " + fmt(r["End Z [m]"], 2) + ") m</div>";
+    });
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn" type="button" id="bEdit">Edit</button><button class="btn danger" type="button" id="bDel">Delete' + (d ? " (+" + d + " downstream)" : "") + "</button></div>";
+    b.className = ""; b.innerHTML = html;
+    $("bEdit").addEventListener("click", function () { S.editing = s.id; $("s_type").value = s.type; renderForm(true); $("addCard").scrollIntoView({ block: "nearest" }); });
+    $("bDel").addEventListener("click", function () {
+      snapshot(); var kill = descendants(s.id);
+      S.net.segments = S.net.segments.filter(function (q) { return kill.indexOf(q.id) < 0; });
+      S.sel = { kind: "port", seg: s.parent || "INLET", port: s.port || "out" }; S.editing = null; markStale(); draw(); renderAll();
+    });
+    ST.height();
+  }
+
+  /* ---------------- setup panels <-> state ---------------- */
+  function fillSetup() {
+    var c = S.cat, n = S.net, i = n.inlet, t = n.thermal;
+    $("in_fluid").innerHTML = opts(Object.keys(c.fluids), i.fluid, null);
+    $("in_label").value = i.label; $("in_T").value = i.T; $("in_P").value = i.P; $("in_Q").value = i.Q;
+    $("in_Tu").innerHTML = opts(c.temp_units, i.T_unit, { degC: "°C", degF: "°F", K: "K" });
+    $("in_Pu").innerHTML = opts(c.pressure_units, i.P_unit); $("in_Qu").innerHTML = opts(c.flow_units, i.Q_unit);
+    $("in_nps").innerHTML = opts(c.nps.concat(["custom"]), i.size.nps, { custom: "Custom ID" });
+    $("in_sch").innerHTML = opts(c.schedules, i.size.sch || "40");
+    $("in_id").value = i.size.id_mm || 150; $("in_wall").value = i.size.wall_mm || 6;
+    $("in_head").innerHTML = opts(DIRS, i.heading, DLBL); $("in_elev").value = i.elev || 0; $("in_patm").value = n.options.P_atm_bar;
+    var cu = i.custom || {};
+    [["cl_rho", "rho"], ["cl_mu", "mu_cP"], ["cl_cp", "cp"], ["cl_k", "k"]].forEach(function (a) { if (cu[a[1]] != null && i.fluid === "Custom liquid") $(a[0]).value = cu[a[1]]; });
+    [["cg_mw", "mw"], ["cg_mu", "mu_cP"], ["cg_cp", "cp"], ["cg_k", "k"], ["cg_g", "gamma"], ["cg_z", "z"], ["cg_jt", "mu_jt_K_per_bar"]].forEach(function (a) { if (cu[a[1]] != null && i.fluid === "Custom gas") $(a[0]).value = cu[a[1]]; });
+    $("p_mat").innerHTML = opts(Object.keys(c.materials), n.pipe.material); $("p_rough").value = n.pipe.rough_mm || "";
+    $("p_rough").placeholder = (c.materials[n.pipe.material] || {}).rough_mm;
+    $("p_len").innerHTML = opts(c.length_units, n.options.len_unit);
+    $("t_on").checked = !!t.enabled; $("t_ins").innerHTML = opts(Object.keys(c.thermal.insulation), t.insulation);
+    $("t_thk").value = t.thk_mm; $("t_k").value = t.k_custom; $("t_env").innerHTML = opts(Object.keys(c.thermal.environments), t.env, c.thermal.environments);
+    $("t_amb").value = t.T_amb; $("t_jac").innerHTML = opts(Object.keys(c.thermal.jackets), t.jacket); $("t_wind").value = t.wind;
+    $("t_depth").value = t.depth; $("t_ksoil").value = t.k_soil;
+    setupVis();
+  }
+  function setupVis() {
+    var f = $("in_fluid").value;
+    $("customL").classList.toggle("hidden", f !== "Custom liquid"); $("customG").classList.toggle("hidden", f !== "Custom gas");
+    $("in_custom").classList.toggle("hidden", $("in_nps").value !== "custom"); $("in_sch").disabled = $("in_nps").value === "custom";
+    $("thermalBox").classList.toggle("hidden", !$("t_on").checked);
+    $("t_kbox").classList.toggle("hidden", $("t_ins").value !== "Custom");
+    $("t_windL").classList.toggle("hidden", $("t_env").value !== "air_wind");
+    $("t_soil").classList.toggle("hidden", $("t_env").value !== "buried");
+    $("t_jac").disabled = $("t_env").value === "buried";
+  }
+  function readSetup() {
+    var n = S.net, i = n.inlet, t = n.thermal, f = $("in_fluid").value;
+    i.label = $("in_label").value; i.fluid = f; i.T = num($("in_T").value, 0); i.T_unit = $("in_Tu").value;
+    i.P = num($("in_P").value, 0); i.P_unit = $("in_Pu").value; i.Q = num($("in_Q").value, 0); i.Q_unit = $("in_Qu").value;
+    i.size = $("in_nps").value === "custom" ? { nps: "custom", id_mm: num($("in_id").value, 150), wall_mm: num($("in_wall").value, 6) } : { nps: $("in_nps").value, sch: $("in_sch").value };
+    i.heading = $("in_head").value; i.elev = num($("in_elev").value, 0); n.options.P_atm_bar = num($("in_patm").value, 1.01325);
+    if (f === "Custom liquid") i.custom = { rho: num($("cl_rho").value, 1000), mu_cP: num($("cl_mu").value, 1), cp: num($("cl_cp").value, 4184), k: num($("cl_k").value, 0.6) };
+    else if (f === "Custom gas") i.custom = { mw: num($("cg_mw").value, 28.96), mu_cP: num($("cg_mu").value, 0.018), cp: num($("cg_cp").value, 1005), k: num($("cg_k").value, 0.026), gamma: num($("cg_g").value, 1.4), z: num($("cg_z").value, 1), mu_jt_K_per_bar: num($("cg_jt").value, 0.25) };
+    else i.custom = {};
+    n.pipe.material = $("p_mat").value; n.pipe.rough_mm = $("p_rough").value; n.options.len_unit = $("p_len").value;
+    $("p_rough").placeholder = (S.cat.materials[n.pipe.material] || {}).rough_mm;
+    t.enabled = $("t_on").checked; t.insulation = $("t_ins").value; t.thk_mm = num($("t_thk").value, 0); t.k_custom = num($("t_k").value, 0.04);
+    t.env = $("t_env").value; t.T_amb = num($("t_amb").value, 30); t.jacket = $("t_jac").value; t.wind = num($("t_wind").value, 0);
+    t.depth = num($("t_depth").value, 1); t.k_soil = num($("t_ksoil").value, 1.2);
+    setupVis(); markStale(); draw(); renderAll();
+  }
+  function bindSetup() {
+    ["in_label", "in_fluid", "in_T", "in_Tu", "in_P", "in_Pu", "in_Q", "in_Qu", "in_nps", "in_sch", "in_id", "in_wall", "in_head", "in_elev", "in_patm",
+     "cl_rho", "cl_mu", "cl_cp", "cl_k", "cg_mw", "cg_mu", "cg_cp", "cg_k", "cg_g", "cg_z", "cg_jt",
+     "p_mat", "p_rough", "p_len", "t_on", "t_ins", "t_thk", "t_k", "t_env", "t_amb", "t_jac", "t_wind", "t_depth", "t_ksoil"
+    ].forEach(function (id) { $(id).addEventListener("change", readSetup); });
+    $("in_label").addEventListener("input", function () { S.net.inlet.label = $("in_label").value; draw(); });
+    $("s_type").addEventListener("change", function () { renderForm(true); });
+    $("bAdd").addEventListener("click", addOrUpdate);
+    $("bCancelEdit").addEventListener("click", function () { cancelEdit(); renderForm(true); });
+    $("s_fields").addEventListener("input", checkForm);
+    $("bUndo").addEventListener("click", function () {
+      if (!S.hist.length) return; S.net = JSON.parse(S.hist.pop()); S.editing = null;
+      layout(); var open = Object.keys(S.geo.ports).filter(function (k) { return S.geo.ports[k].open; });
+      S.sel = open.length ? { kind: "port", seg: S.geo.ports[open[0]].owner, port: S.geo.ports[open[0]].port } : { kind: "port", seg: "INLET", port: "out" };
+      markStale(); fillSetup(); draw(); renderAll();
+    });
+    $("bClear").addEventListener("click", function () {
+      if (!S.net.segments.length) return; snapshot(); S.net.segments = []; S.sel = { kind: "port", seg: "INLET", port: "out" }; S.editing = null;
+      S.results = null; S.stale = false; S.cam.pivot = null; draw(); renderAll(); renderResults();
+    });
+    $("bExport").addEventListener("click", function () {
+      try {
+        var blob = new Blob([JSON.stringify(S.net, null, 2)], { type: "application/json" }), a = document.createElement("a");
+        a.href = URL.createObjectURL(blob); a.download = "piping_network.json"; document.body.appendChild(a); a.click(); a.remove();
+      } catch (e) { alertMsg("Export blocked by the browser – use the Streamlit 'Save current network' button in the sidebar."); }
+    });
+    $("fImport").addEventListener("change", function (e) {
+      var file = e.target.files[0]; if (!file) return; var rd = new FileReader();
+      rd.onload = function () { try { loadNet(JSON.parse(rd.result)); } catch (err) { alertMsg("Invalid JSON file: " + err.message); } e.target.value = ""; };
+      rd.readAsText(file);
+    });
+    $("bCalc").addEventListener("click", calculate);
+    Array.prototype.forEach.call(root.querySelectorAll(".tab"), function (b) {
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(root.querySelectorAll(".tab"), function (x) { x.classList.toggle("on", x === b); });
+        ["sum", "prof", "tbl", "eq"].forEach(function (k) { $("tab_" + k).classList.toggle("hidden", k !== b.getAttribute("data-tab")); });
+        if (b.getAttribute("data-tab") === "prof") drawChart(); ST.height();
+      });
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('input[name="cv"]'), function (r) { r.addEventListener("change", drawChart); });
+    $("chart").addEventListener("mousemove", chartHover); $("chart").addEventListener("mouseleave", function () { drawChart(); });
+  }
+  function alertMsg(m) { $("valCard").innerHTML = '<div class="alert bad">' + esc(m) + "</div>"; ST.height(); }
+  function loadNet(n) {
+    if (!n || !n.inlet || !Array.isArray(n.segments)) throw new Error("not a piping network");
+    var d = defaultNet(); ["pipe", "thermal", "options"].forEach(function (k) { n[k] = Object.assign({}, d[k], n[k] || {}); });
+    n.inlet = Object.assign({}, d.inlet, n.inlet); migrate(n);
+    snapshot(); S.net = n; S.editing = null; S.cam.pivot = null; S.results = null; S.stale = false;
+    layout(); var open = Object.keys(S.geo.ports).filter(function (k) { return S.geo.ports[k].open; });
+    S.sel = open.length ? { kind: "port", seg: S.geo.ports[open[0]].owner, port: S.geo.ports[open[0]].port } : { kind: "port", seg: "INLET", port: "out" };
+    fillSetup(); draw(); renderAll(); renderResults();
+  }
+
+  /* ---------------- validation card + calculate ---------------- */
+  function renderAll() {
+    var errs = validate(), v = $("valCard"), h = "";
+    if (errs.length) h += '<div class="alert bad"><b>Fix before calculating (' + errs.length + "):</b><ul>" + errs.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul></div>";
+    else h += '<div class="alert ok">Network is complete and consistent – ready to calculate.</div>';
+    if (S.stale) h += '<div class="alert warn">Network changed since last calculation – results below are out of date. Press Calculate.</div>';
+    if (!ST.connected) h += '<div class="alert warn">Python engine not connected. Run <b>streamlit run app.py</b> to calculate; you can still build and export the network.</div>';
+    v.innerHTML = h;
+    $("bCalc").disabled = errs.length > 0 || !ST.connected || !!S.pendingNonce;
+    $("bCalc").title = errs.length ? "Resolve the listed issues first" : "";
+    $("bUndo").disabled = !S.hist.length;
+    renderForm(); renderSel(); ST.height();
+  }
+  function calculate() {
+    var errs = validate(); if (errs.length || !ST.connected) { renderAll(); return; }
+    S.pendingNonce = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    $("bCalc").innerHTML = '<span class="spinner"></span> Calculating'; $("bCalc").disabled = true;
+    ST.setValue({ action: "calculate", nonce: S.pendingNonce, network: S.net });
+  }
+
+  /* ---------------- results ---------------- */
+  function renderResults() {
+    var r = S.results, el = $("tab_sum");
+    if (!r) { el.innerHTML = '<div class="hint">Build the network, then press <b>Calculate</b>.</div>'; $("tbl").innerHTML = ""; drawChart(); ST.height(); return; }
+    var h = "";
+    if (r.errors && r.errors.length) h += '<div class="alert bad"><b>Calculation blocked:</b><ul>' + r.errors.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul></div>";
+    if (r.ok) {
+      var sm = r.summary;
+      h += sm.feasible ? '<div class="alert ok"><b>ΔP feasible.</b> All outlets receive positive, single-phase pressure' + (r.outlets.some(function (o) { return o.Pmin !== "" && o.Pmin != null; }) ? " above the required minimum." : ".") + "</div>"
+        : '<div class="alert bad"><b>⚠ ΔP NOT FEASIBLE</b><ul>' + r.infeasible.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul></div>";
+      if (r.warnings.length) h += '<div class="alert warn"><b>Warnings</b><ul>' + r.warnings.map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("") + "</ul></div>";
+      h += '<div class="cards">' +
+        kpi(esc(sm.inlet_label), fmt(sm.P_in) + " " + sm.P_unit, fmt(sm.T_in, 1) + " " + tUnitLbl(sm.T_unit) + " · " + esc(sm.fluid) + " (" + sm.phase + ")") +
+        kpi("Inlet flow", fmt(sm.m_kgh, 0) + " kg/h", fmt(sm.Q_m3h_in) + " m³/h actual · ρ " + fmt(sm.rho_in) + " kg/m³");
+      r.outlets.forEach(function (o) {
+        h += kpi(esc(o.label), fmt(o.P) + " " + sm.P_unit, "ΔP " + fmt(o.dP_total) + " " + sm.dP_unit + " · T " + fmt(o.T, 1) + " " + tUnitLbl(sm.T_unit) + " · " + fmt(o.m_kgh, 0) + " kg/h · path " + fmt(o.length, 1) + " " + sm.len_unit + " · (E,N,Z) " + fmt(o.E, 1) + ", " + fmt(o.N, 1) + ", " + fmt(o.Z, 2) + " m", !o.feasible);
+      });
+      h += "</div>";
+      if (!sm.coolprop) h += '<div class="hint">Properties: built-in correlations (install CoolProp for real-fluid properties).</div>';
+    }
+    el.innerHTML = h;
+    if (r.ok && r.rows.length) {
+      var cols = Object.keys(r.rows[0]);
+      $("tbl").innerHTML = "<table><thead><tr>" + cols.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        r.rows.map(function (row) { return "<tr>" + cols.map(function (c) { var v = row[c]; return "<td>" + esc(typeof v === "number" ? fmt(v, /Re/.test(c) || /Mass/.test(c) ? 0 : null) : v == null ? "–" : v) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+    } else $("tbl").innerHTML = "";
+    drawChart(); ST.height();
+  }
+  function kpi(t, b, s, bad) { return '<div class="kpi' + (bad ? " bad" : "") + '"><span>' + t + "</span><b>" + b + "</b><span>" + s + "</span></div>"; }
+
+  /* ---------------- axial profile chart (SVG) ---------------- */
+  var PAL = ["#0f6cbd", "#d83b01", "#107c41", "#8764b8", "#c19c00", "#038387", "#e3008c", "#4f6bed"];
+  var CH = null;
+  function drawChart() {
+    var svg = $("chart"), r = S.results; if (!svg) return;
+    var W = svg.clientWidth || 700, H = 340; svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    if (!r || !r.ok || !r.profiles.length) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" fill="var(--muted)" font-size="12">No results yet</text>'; CH = null; return; }
+    var key = (root.querySelector('input[name="cv"]:checked') || {}).value || "P", sm = r.summary;
+    var unit = key === "P" ? sm.P_unit : key === "T" ? tUnitLbl(sm.T_unit) : "m";
+    var ser = r.profiles.map(function (p, i) { return { name: p.outlet, c: PAL[i % PAL.length], pts: p.points }; });
+    var xs = [], ys = []; ser.forEach(function (s) { s.pts.forEach(function (p) { xs.push(p.x); ys.push(p[key]); }); });
+    var x0 = 0, x1 = Math.max.apply(null, xs) || 1, y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    if (y1 - y0 < 1e-6) { y0 -= 1; y1 += 1; } var pad = (y1 - y0) * 0.08; y0 -= pad; y1 += pad;
+    var m = { l: 62, r: 16, t: 26, b: 42 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var X = function (v) { return m.l + (v - x0) / (x1 - x0) * pw; }, Y = function (v) { return m.t + (1 - (v - y0) / (y1 - y0)) * ph; };
+    var h = [];
+    nice(y0, y1, 6).forEach(function (t) { h.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(t) + '" y2="' + Y(t) + '" stroke="var(--grid)"/><text x="' + (m.l - 6) + '" y="' + (Y(t) + 4) + '" font-size="10" text-anchor="end" fill="var(--muted)">' + fmtTick(t) + "</text>"); });
+    nice(x0, x1, 8).forEach(function (t) { h.push('<line y1="' + m.t + '" y2="' + (H - m.b) + '" x1="' + X(t) + '" x2="' + X(t) + '" stroke="var(--grid)"/><text y="' + (H - m.b + 14) + '" x="' + X(t) + '" font-size="10" text-anchor="middle" fill="var(--muted)">' + fmtTick(t) + "</text>"); });
+    h.push('<rect x="' + m.l + '" y="' + m.t + '" width="' + pw + '" height="' + ph + '" fill="none" stroke="var(--line)"/>');
+    h.push('<text x="' + (m.l + pw / 2) + '" y="' + (H - 6) + '" font-size="11" text-anchor="middle" fill="var(--ink)">Axial distance from ' + esc(sm.inlet_label) + " [" + sm.len_unit + "]</text>");
+    h.push('<text transform="translate(14,' + (m.t + ph / 2) + ') rotate(-90)" font-size="11" text-anchor="middle" fill="var(--ink)">' + (key === "P" ? "Pressure" : key === "T" ? "Temperature" : "Elevation") + " [" + esc(unit) + "]</text>");
+    if (key === "P") r.outlets.forEach(function (o, i) { if (o.Pmin === "" || o.Pmin == null) return; var yy = Y(+o.Pmin); if (yy < m.t || yy > m.t + ph) return; h.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yy + '" y2="' + yy + '" stroke="' + PAL[i % PAL.length] + '" stroke-dasharray="5 4" opacity="0.7"/>'); });
+    ser.forEach(function (s) { h.push('<polyline fill="none" stroke="' + s.c + '" stroke-width="2" points="' + s.pts.map(function (p) { return X(p.x).toFixed(1) + "," + Y(p[key]).toFixed(1); }).join(" ") + '"/>'); });
+    var lx = m.l + 6; ser.forEach(function (s) { h.push('<rect x="' + lx + '" y="8" width="12" height="4" fill="' + s.c + '"/><text x="' + (lx + 16) + '" y="14" font-size="11" fill="var(--ink)">' + esc(s.name) + "</text>"); lx += 30 + s.name.length * 6.5; });
+    h.push('<g id="hov"></g>');
+    svg.innerHTML = h.join("");
+    CH = { X: X, Y: Y, m: m, pw: pw, ph: ph, x0: x0, x1: x1, ser: ser, key: key, unit: unit, W: W };
+  }
+  function chartHover(e) {
+    if (!CH) return; var svg = $("chart"), rc = svg.getBoundingClientRect(), px = (e.clientX - rc.left) * (CH.W / rc.width);
+    if (px < CH.m.l || px > CH.m.l + CH.pw) return;
+    var xv = CH.x0 + (px - CH.m.l) / CH.pw * (CH.x1 - CH.x0), h = ['<line x1="' + px + '" x2="' + px + '" y1="' + CH.m.t + '" y2="' + (CH.m.t + CH.ph) + '" stroke="var(--muted)" stroke-dasharray="3 3"/>'], lines = [];
+    CH.ser.forEach(function (s) {
+      var best = null; s.pts.forEach(function (p) { if (!best || Math.abs(p.x - xv) < Math.abs(best.x - xv)) best = p; });
+      if (!best || Math.abs(best.x - xv) > (CH.x1 - CH.x0) * 0.05) return;
+      h.push('<circle cx="' + CH.X(best.x) + '" cy="' + CH.Y(best[CH.key]) + '" r="4" fill="' + s.c + '"/>');
+      lines.push(s.name + ": " + fmt(best[CH.key]) + " " + CH.unit + " (" + best.seg + ", " + fmt(best.x, 1) + ")");
+    });
+    var bx = px + 10 + 240 > CH.W ? px - 250 : px + 10;
+    h.push('<rect x="' + bx + '" y="' + (CH.m.t + 6) + '" width="240" height="' + (8 + lines.length * 14) + '" rx="4" fill="var(--panel)" stroke="var(--line)"/>');
+    lines.forEach(function (l, i) { h.push('<text x="' + (bx + 6) + '" y="' + (CH.m.t + 20 + i * 14) + '" font-size="10" fill="var(--ink)">' + esc(l) + "</text>"); });
+    $("hov").innerHTML = h.join("");
+  }
+  function nice(a, b, n) {
+    var span = b - a, step = Math.pow(10, Math.floor(Math.log10(span / n))), err = span / n / step;
+    step *= err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 1.5 ? 2 : 1;
+    var out = [], s = Math.ceil(a / step) * step; for (var v = s; v <= b + step * 1e-9 && out.length < 50; v += step) out.push(Math.round(v / step) * step);
+    return out;
+  }
+  function fmtTick(v) { var a = Math.abs(v); return a >= 1000 ? v.toFixed(0) : a >= 10 ? v.toFixed(1) : v.toFixed(2); }
+
+  /* ---------------- Streamlit render handler ---------------- */
+  function onRender(data) {
+    var args = data.args || {};
+    if (data.theme && data.theme.base) document.body.classList.toggle("dark", data.theme.base === "dark");
+    var wasFallback = S.cat && S.cat === FALLBACK;
+    if (args.catalog) S.cat = args.catalog;
+    if (!ST.connected) { ST.connected = true; $("conn").textContent = "Python engine connected" + (S.cat && S.cat.coolprop ? " · CoolProp" : ""); $("conn").classList.remove("off"); }
+    if (!S.inited) init();
+    else if (wasFallback && args.catalog) { fillSetup(); draw(); }
+    if (args.restore && args.restore.id && args.restore.id !== S.restoreId) {
+      S.restoreId = args.restore.id;
+      if (args.restore.network && (args.restore.force || !S.net.segments.length)) { try { loadNet(args.restore.network); } catch (e) {} }
+    }
+    if (args.results && args.results.nonce && args.results.nonce !== (S.results && S.results.nonce)) {
+      if (!S.pendingNonce || args.results.nonce === S.pendingNonce) {
+        S.results = args.results; S.stale = false; S.pendingNonce = null;
+        $("bCalc").textContent = "Calculate"; draw(); renderAll(); renderResults();
+        Array.prototype.forEach.call(root.querySelectorAll(".tab"), function (b) { if (b.getAttribute("data-tab") === "sum") b.click(); });
+      }
+    }
+    renderAll();
+  }
+
+  function init() {
+    S.inited = true;
+    S.net = defaultNet();
+    fillSetup(); bindSetup(); draw(); renderAll(); renderResults();
+    if (window.ResizeObserver) {
+      var lastW = 0;
+      new ResizeObserver(function () { ST.height(); var w = $("svg").clientWidth; if (w && w !== lastW) { lastW = w; draw(); } }).observe(document.body);
+    }
+    window.addEventListener("resize", function () { drawChart(); });
+  }
+
+  window.addEventListener("message", function (e) { if (e.data && e.data.type === "streamlit:render") onRender(e.data); });
+  ST.ready();
+  // standalone fallback (opened directly / GitHub Pages)
+  setTimeout(function () { if (!S.inited) { S.cat = FALLBACK; if (S.cat) init(); else document.body.innerHTML = "<p style='padding:20px'>Run via <b>streamlit run app.py</b>.</p>"; } }, 1200);
+})();
+</script>
+</body>
+</html>
